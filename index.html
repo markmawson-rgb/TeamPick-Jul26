@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Football Team Generator</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; max-width: 800px; margin: 0 auto; background-color: #f4f4f9; }
+        .card { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 20px; }
+        .flex-container { display: flex; gap: 20px; }
+        .team-box { flex: 1; padding: 15px; border: 1px solid #ccc; border-radius: 5px; background: #fafafa; }
+        .player-list { max-height: 400px; overflow-y: auto; border: 1px solid #ddd; padding: 10px; margin-bottom: 15px; background: #fff; }
+        .player-item { display: flex; justify-content: space-between; padding: 5px 0; border-bottom: 1px solid #eee; }
+        .player-item label { cursor: pointer; display: flex; align-items: center; gap: 8px; width: 100%; }
+        .player-item:last-child { border-bottom: none; }
+        button { background-color: #007bff; color: white; border: none; padding: 10px 15px; border-radius: 4px; cursor: pointer; font-size: 16px; }
+        button:hover { background-color: #0056b3; }
+        input[type="number"] { width: 50px; padding: 5px; }
+        .team-header { font-weight: bold; border-bottom: 2px solid #333; padding-bottom: 5px; margin-bottom: 10px; }
+    </style>
+</head>
+<body>
+
+    <h2>Football Team Generator</h2>
+
+    <div class="card">
+        <h3>1. Setup & Availability</h3>
+        <label>
+            <strong>Players per side:</strong> 
+            <input type="number" id="playersPerSide" value="7" min="1">
+        </label>
+        <p id="selectionStatus" style="font-weight: bold; color: #555;"></p>
+
+        <div class="player-list" id="playerList"></div>
+
+        <button onclick="generateTeams()">Generate Balanced Teams</button>
+    </div>
+
+    <div class="card flex-container" id="resultsArea" style="display: none;">
+        <div class="team-box" id="teamA"></div>
+        <div class="team-box" id="teamB"></div>
+    </div>
+
+    <script>
+        // 1. Dataset from PLAYERS.csv
+        const playersDataset = [
+            { id: 30, name: "Adam Brown", rating: 6 },
+            { id: 70, name: "James (Lukes Mate)", rating: 5 },
+            { id: 1, name: "Brad", rating: 7 },
+            { id: 7, name: "Richie Parker", rating: 6 },
+            { id: 56, name: "Karl", rating: 6 },
+            { id: 55, name: "Callum Smith", rating: 6 },
+            { id: 17, name: "Liam Martin", rating: 8 },
+            { id: 59, name: "Rob", rating: 7 },
+            { id: 63, name: "Tom Harrison", rating: 7 },
+            { id: 44, name: "Mark Smith", rating: 6 },
+            { id: 3, name: "Chris Holley", rating: 6 },
+            { id: 9, name: "Alex Healey", rating: 5 },
+            { id: 33, name: "Paddy Barry", rating: 6 },
+            { id: 28, name: "Lev Yalkin", rating: 7 },
+            { id: 15, name: "Damien Hughes", rating: 6 },
+            { id: 16, name: "Henry Wall", rating: 7 },
+            { id: 57, name: "Josh Thompson", rating: 5 },
+            { id: 58, name: "Jake Armstrong", rating: 6 },
+            { id: 54, name: "Brownie", rating: 5 },
+            { id: 47, name: "Pravin", rating: 4 },
+            { id: 49, name: "Max Graham", rating: 6 },
+            { id: 19, name: "Chris Andrews", rating: 7 },
+            { id: 27, name: "Jamie (Liam's Mate)", rating: 5 },
+            { id: 38, name: "Jamie (Chris's Mate)", rating: 6 },
+            { id: 43, name: "Max (Adam's Mate)", rating: 6 },
+            { id: 51, name: "Boaz (Chris's mate)", rating: 5 },
+            { id: 25, name: "Isaac (Alex's mate)", rating: 5 },
+            { id: 52, name: "Andy Barras", rating: 5 },
+            { id: 41, name: "Poiud", rating: 4 },
+            { id: 2, name: "Billy", rating: 5 },
+            { id: 42, name: "Fawce", rating: 4 },
+            { id: 61, name: "Jacob", rating: 6 },
+            { id: 76, name: "Toff", rating: 4 },
+            { id: 37, name: "Rob Jones", rating: 5 },
+            { id: 75, name: "Robbie Walshaw", rating: 5 },
+            { id: 50, name: "Scottish Kris", rating: 5 },
+            { id: 39, name: "Max Richardson", rating: 6 },
+            { id: 71, name: "Davis Wilson", rating: 5 },
+            { id: 60, name: "Liam", rating: 5 },
+            { id: 77, name: "Marty", rating: 5 },
+            { id: 10, name: "Tim", rating: 5 },
+            { id: 13, name: "Piers Mitchell", rating: 5 },
+            { id: 8, name: "Dr Al", rating: 5 },
+            { id: 78, name: "Big Rich", rating: 6 },
+            { id: 24, name: "Henry (Alex's Mate)", rating: 4 },
+            { id: 62, name: "Nightsy", rating: 5 },
+            { id: 79, name: "Simon", rating: 5 },
+            { id: 35, name: "Passy", rating: 5 },
+            { id: 18, name: "Joe (Alex Mate)", rating: 6 },
+            { id: 66, name: "Dylan", rating: 9 },
+            { id: 6, name: "Shaun", rating: 7 },
+            { id: 67, name: "Lennox Barry", rating: 6 },
+            { id: 45, name: "Harry", rating: 6 },
+            { id: 20, name: "Sam Hart", rating: 6 },
+            { id: 22, name: "Luke", rating: 6 },
+            { id: 4, name: "James Ramsdale", rating: 5 },
+            { id: 23, name: "Richie Egan", rating: 7 },
+            { id: 12, name: "Malcolm", rating: 6 },
+            { id: 53, name: "Joe", rating: 4 },
+            { id: 40, name: "Josh", rating: 4 },
+            { id: 31, name: "Andy Dixon", rating: 5 },
+            { id: 34, name: "James (Billys mate)", rating: 6 },
+            { id: 11, name: "Andy Marsey", rating: 6 },
+            { id: 72, name: "Macca (Damos mate)", rating: 7 },
+            { id: 21, name: "Nard", rating: 4 },
+            { id: 26, name: "Andy (Jack's Mate)", rating: 5 },
+            { id: 74, name: "Roman", rating: 5 },
+            { id: 36, name: "Craig M", rating: 6 },
+            { id: 14, name: "Adam Peacock", rating: 8 },
+            { id: 68, name: "James Mellon", rating: 8 },
+            { id: 69, name: "Bish", rating: 5 },
+            { id: 46, name: "Paul Costello", rating: 7 },
+            { id: 32, name: "JJ", rating: 5 },
+            { id: 48, name: "Ralph Wall", rating: 5 },
+            { id: 29, name: "Robbie Atkinson", rating: 5 },
+            { id: 5, name: "Jack Robson", rating: 8 }
+        ];
+
+        // 2. Initialization: Render list
+        window.onload = function() {
+            const listContainer = document.getElementById('playerList');
+            let defaultTarget = parseInt(document.getElementById('playersPerSide').value) * 2;
+
+            // Sort by Rank (ID) ascending
+            playersDataset.sort((a, b) => a.id - b.id);
+
+            playersDataset.forEach((player, index) => {
+                const isChecked = index < defaultTarget ? "checked" : "";
+                listContainer.innerHTML += `
+                    <div class="player-item">
+                        <label>
+                            <input type="checkbox" class="player-cb" value="${player.id}" ${isChecked}>
+                            ${player.id}. ${player.name}
+                        </label>
+                        <span>Rating: ${player.rating}</span>
+                    </div>
+                `;
+            });
+
+            // Safari fix: Explicitly attach click listeners to the container to catch checkbox changes instantly
+            listContainer.addEventListener('click', function(e) {
+                if (e.target && e.target.classList.contains('player-cb')) {
+                    updateSelectionCount();
+                }
+            });
+
+            // Safari fix: Listen for manual typed changes to the number input directly
+            document.getElementById('playersPerSide').addEventListener('input', updateSelectionCount);
+
+            updateSelectionCount();
+        };
+
+        // 3. UI Update: Keep track of how many are selected
+        function updateSelectionCount() {
+            const selectedCount = document.querySelectorAll('.player-cb:checked').length;
+            const targetCount = parseInt(document.getElementById('playersPerSide').value) * 2;
+            const status = document.getElementById('selectionStatus');
+            
+            status.innerText = `Selected: ${selectedCount} / ${targetCount} required players.`;
+            status.style.color = selectedCount === targetCount ? "green" : "red";
+        }
+
+        // 4. The Generation & Balancing Algorithm
+        function generateTeams() {
+            const targetCount = parseInt(document.getElementById('playersPerSide').value) * 2;
+            const checkedBoxes = Array.from(document.querySelectorAll('.player-cb:checked'));
+
+            if (checkedBoxes.length !== targetCount) {
+                alert(`Please select exactly ${targetCount} players for a ${targetCount/2}-a-side game.`);
+                return;
+            }
+
+            let availablePlayers = checkedBoxes.map(cb => {
+                return playersDataset.find(p => p.id == cb.value);
+            });
+
+            let teamA = [], teamB = [];
+            let matched = false;
+            let attempts = 0;
+            const maxAttempts = 10000; 
+            
+            let bestDifference = Infinity;
+            let bestTeamA = [];
+            let bestTeamB = [];
+
+            while (!matched && attempts < maxAttempts) {
+                attempts++;
+                
+                for (let i = availablePlayers.length - 1; i > 0; i--) {
+                    const j = Math.floor(Math.random() * (i + 1));
+                    [availablePlayers[i], availablePlayers[j]] = [availablePlayers[j], availablePlayers[i]];
+                }
+
+                const mid = availablePlayers.length / 2;
+                teamA = availablePlayers.slice(0, mid);
+                teamB = availablePlayers.slice(mid);
+
+                const ratingA = teamA.reduce((sum, p) => sum + p.rating, 0);
+                const ratingB = teamB.reduce((sum, p) => sum + p.rating, 0);
+                const difference = Math.abs(ratingA - ratingB);
+
+                if (difference <= 1) {
+                    matched = true;
+                    bestTeamA = teamA;
+                    bestTeamB = teamB;
+                } else if (difference < bestDifference) {
+                    bestDifference = difference;
+                    bestTeamA = teamA;
+                    bestTeamB = teamB;
+                }
+            }
+
+            if (!matched) {
+                alert(`Could not find a combination with a rating difference of 1 or less after ${maxAttempts} attempts. Showing the closest attempt (Difference: ${bestDifference}).`);
+            }
+
+            displayTeams(bestTeamA, bestTeamB);
+        }
+
+        // 5. Output the Results
+        function displayTeams(teamA, teamB) {
+            const ratingA = teamA.reduce((sum, p) => sum + p.rating, 0);
+            const ratingB = teamB.reduce((sum, p) => sum + p.rating, 0);
+
+            let htmlA = `<div class="team-header">Red Team (Total Rating: ${ratingA})</div><ul>`;
+            teamA.forEach(p => htmlA += `<li>${p.name}</li>`);
+            htmlA += `</ul>`;
+
+            let htmlB = `<div class="team-header">Colours Team (Total Rating: ${ratingB})</div><ul>`;
+            teamB.forEach(p => htmlB += `<li>${p.name}</li>`);
+            htmlB += `</ul>`;
+
+            document.getElementById('teamA').innerHTML = htmlA;
+            document.getElementById('teamB').innerHTML = htmlB;
+            document.getElementById('resultsArea').style.display = "flex";
+        }
+    </script>
+</body>
+</html>
